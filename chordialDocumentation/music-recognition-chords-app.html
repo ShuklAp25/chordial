@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChordFinder Studio</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #607080;
+      --line: #d8dee4;
+      --paper: #f7f5ef;
+      --panel: #ffffff;
+      --accent: #176b87;
+      --accent-2: #a4413d;
+      --good: #317a4f;
+      --shadow: 0 18px 45px rgba(20, 30, 40, .13);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(110deg, rgba(23, 107, 135, .10), transparent 38%),
+        linear-gradient(250deg, rgba(164, 65, 61, .11), transparent 42%),
+        var(--paper);
+      color: var(--ink);
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      min-height: 40px;
+      padding: 0 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); border-color: #9db2bf; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: white; }
+    button.warn { background: var(--accent-2); border-color: var(--accent-2); color: white; }
+    button:disabled { cursor: not-allowed; opacity: .45; transform: none; }
+
+    .shell {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 22px 0 30px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      letter-spacing: 0;
+      line-height: 1.02;
+    }
+
+    .lede {
+      margin: 7px 0 0;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.5;
+    }
+
+    .status-pill {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.7);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 390px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel h2 {
+      font-size: 17px;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-body { padding: 16px; }
+
+    .stack { display: grid; gap: 14px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 40px;
+      padding: 8px 10px;
+      background: white;
+      color: var(--ink);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      border: 1px dashed #9db2bf;
+      border-radius: 8px;
+      padding: 14px;
+      background: rgba(255,255,255,.65);
+    }
+
+    audio { width: 100%; min-height: 42px; }
+
+    .meter {
+      height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: repeating-linear-gradient(90deg, #f1f4f6 0 8px, #fff 8px 16px);
+      position: relative;
+    }
+
+    .meter-bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(23,107,135,.28), rgba(164,65,61,.30));
+      transition: width .08s linear;
+    }
+
+    .result {
+      display: grid;
+      gap: 6px;
+      padding: 13px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .song-title { font-size: 21px; font-weight: 750; }
+    .confidence { color: var(--good); font-weight: 650; }
+
+    .chart-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .segmented {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+
+    .segmented button {
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-radius: 0;
+      min-width: 42px;
+    }
+
+    .segmented button:last-child { border-right: 0; }
+
+    .chart {
+      min-height: 560px;
+      max-height: calc(100vh - 250px);
+      overflow: auto;
+      padding: 26px;
+      border-top: 1px solid var(--line);
+      background: #fffdf7;
+      font-family: "Courier New", ui-monospace, monospace;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .chart .meta {
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      white-space: normal;
+    }
+
+    .chart .meta strong {
+      display: block;
+      font-size: 26px;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      line-height: 1.1;
+    }
+
+    .chord {
+      display: inline-block;
+      color: var(--accent-2);
+      font-weight: 800;
+      margin-right: 2px;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .provider-links a {
+      color: var(--accent);
+      font-weight: 650;
+      text-decoration: none;
+      margin-right: 12px;
+    }
+
+    .provider-links a:hover { text-decoration: underline; }
+
+    .toast {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 880px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .status-pill { white-space: normal; }
+      main { grid-template-columns: 1fr; }
+      .chart { max-height: none; min-height: 420px; padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>ChordFinder Studio</h1>
+        <p class="lede">Record or upload a song clip, identify the track, then load a playable chord chart. The demo works offline with public-domain charts; add an AudD token for live song recognition.</p>
+      </div>
+      <div class="status-pill" id="status">Ready</div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Input</h2>
+          <span class="note" id="recordTime">00:00</span>
+        </div>
+        <div class="panel-body stack">
+          <div class="row">
+            <button class="primary" id="recordBtn" title="Start recording">Record</button>
+            <button class="warn" id="stopBtn" title="Stop recording" disabled>Stop</button>
+            <button id="clearBtn" title="Clear the current clip">Clear</button>
+          </div>
+
+          <div class="meter" aria-label="Input level">
+            <div class="meter-bar" id="meterBar"></div>
+          </div>
+
+          <label>
+            Upload recorded music
+            <input id="audioFile" type="file" accept="audio/*,video/*">
+          </label>
+
+          <audio id="preview" controls></audio>
+
+          <label>
+            Live recognition token
+            <input id="apiToken" type="password" placeholder="AudD token, optional">
+          </label>
+
+          <div class="row">
+            <button class="primary" id="recognizeBtn">Recognize</button>
+            <select id="demoSelect" aria-label="Demo song">
+              <option value="amazing-grace">Demo: Amazing Grace</option>
+              <option value="swing-low">Demo: Swing Low, Sweet Chariot</option>
+              <option value="house-rising-sun">Demo: House of the Rising Sun</option>
+            </select>
+          </div>
+
+          <div class="result" aria-live="polite">
+            <span class="note">Recognized song</span>
+            <span class="song-title" id="songTitle">No song yet</span>
+            <span id="songArtist">Record a clip or choose a demo.</span>
+            <span class="confidence" id="confidence"></span>
+          </div>
+
+          <div class="provider-links">
+            <a id="songsterrLink" target="_blank" rel="noreferrer">Songsterr search</a>
+            <a id="chordieLink" target="_blank" rel="noreferrer">Chordie search</a>
+          </div>
+
+          <p class="note">Production note: most lyric-and-chord pages do not allow direct browser scraping. A launch version should fetch only licensed, public-domain, user-owned, or partner-provided charts through a server adapter.</p>
+          <div class="toast" id="toast"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Chord Chart</h2>
+          <div class="chart-tools">
+            <div class="segmented" aria-label="Transpose">
+              <button id="downBtn" title="Transpose down">-</button>
+              <button id="resetBtn" title="Reset transpose">0</button>
+              <button id="upBtn" title="Transpose up">+</button>
+            </div>
+            <button id="printBtn" title="Print chart">Print</button>
+          </div>
+        </div>
+        <div class="chart" id="chart"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const charts = {
+      "amazing-grace": {
+        title: "Amazing Grace",
+        artist: "Traditional",
+        key: "G",
+        confidence: "Demo match",
+        body: `{title: Amazing Grace}
+{artist: Traditional}
+{key: G}
+
+{start_of_verse: Verse 1}
+A-[G]mazing [G7]grace, how [C]sweet the [G]sound
+That [G]saved a [G/B]wretch like [D]me [D7]
+I [G]once was [G7/B]lost, but [C]now I'm [G]found
+[G/F#]Was [Em]blind, but [G/D]now [D7]I [G]see
+{end_of_verse}
+
+{start_of_verse: Verse 2}
+'Twas [G]grace that [G7]taught my [C]heart to [G]fear
+And [G]grace my [G/B]fears re-[D]lieved [D7]
+How [G]precious [G7/B]did that [C]grace ap-[G]pear
+The [G/F#]hour I [Em]first be-[G/D]lieved [D7] [G]
+{end_of_verse}`
+      },
+      "swing-low": {
+        title: "Swing Low, Sweet Chariot",
+        artist: "Traditional",
+        key: "D",
+        confidence: "Demo match",
+        body: `{title: Swing Low, Sweet Chariot}
+{artist: Traditional}
+{key: D}
+
+{start_of_chorus: Chorus}
+Swing [D]low, sweet [G]chari-[D]ot
+Comin' for to carry me [A7]home
+Swing [D7]low, sweet [G]chari-[D]ot
+Comin' for to [A7]carry me [D]home
+{end_of_chorus}
+
+{start_of_verse: Verse}
+I [D]looked over Jordan and [G]what did I [D]see
+Comin' for to carry me [A7]home
+A [D]band of angels [G]comin' after [D]me
+Comin' for to [A7]carry me [D]home
+{end_of_verse}`
+      },
+      "house-rising-sun": {
+        title: "House of the Rising Sun",
+        artist: "Traditional",
+        key: "Am",
+        confidence: "Demo match",
+        body: `{title: House of the Rising Sun}
+{artist: Traditional}
+{key: Am}
+
+{start_of_verse: Verse}
+There [Am]is a [C]house in [D]New Orleans
+They [F]call the [Am]Rising [E]Sun [E7]
+And it's [Am]been the [C]ruin of [D]many a poor [F]boy
+And [Am]God, I [E]know, I'm [Am]one
+{end_of_verse}
+
+{comment: Common folk progression; lyrics vary by tradition.}`
+      }
+    };
+
+    const noteOrder = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const flatMap = { Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#" };
+    const el = id => document.getElementById(id);
+    let audioBlob = null;
+    let recorder = null;
+    let stream = null;
+    let timer = null;
+    let seconds = 0;
+    let transpose = 0;
+    let currentChart = charts["amazing-grace"];
+
+    function setStatus(text) { el("status").textContent = text; }
+    function toast(text) { el("toast").textContent = text; }
+
+    function formatTime(value) {
+      return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+    }
+
+    function transposeChord(chord) {
+      return chord.replace(/^([A-G](?:#|b)?)(.*)$/i, (_, root, tail) => {
+        const normalized = flatMap[root] || root.toUpperCase();
+        const idx = noteOrder.indexOf(normalized);
+        if (idx < 0) return chord;
+        return noteOrder[(idx + transpose + 120) % 12] + tail;
+      });
+    }
+
+    function renderChordPro(chartData) {
+      currentChart = chartData;
+      const html = chartData.body
+        .replace(/\{title:.*?\}\n?/gi, "")
+        .replace(/\{artist:.*?\}\n?/gi, "")
+        .replace(/\{key:.*?\}\n?/gi, "")
+        .replace(/\{start_of_(?:verse|chorus):?\s*([^}]*)\}/gi, "\n[$1]")
+        .replace(/\{end_of_(?:verse|chorus)\}/gi, "")
+        .replace(/\{comment:\s*([^}]*)\}/gi, "\n($1)")
+        .replace(/\[([^\]]+)\]/g, (_, chord) => `<span class="chord">${transposeChord(chord)}</span>`);
+
+      el("chart").innerHTML = `<div class="meta"><strong>${chartData.title}</strong><span>${chartData.artist} · Key ${chartData.key}${transpose ? ` · Transposed ${transpose > 0 ? "+" : ""}${transpose}` : ""}</span></div>${html}`;
+      el("songTitle").textContent = chartData.title;
+      el("songArtist").textContent = chartData.artist;
+      el("confidence").textContent = chartData.confidence || "";
+      updateProviderLinks(chartData.title, chartData.artist);
+    }
+
+    function updateProviderLinks(title, artist) {
+      const query = encodeURIComponent(`${title} ${artist} chords`);
+      el("songsterrLink").href = `https://www.songsterr.com/?pattern=${query}`;
+      el("chordieLink").href = `https://www.chordie.com/?q=${query}`;
+    }
+
+    function chooseDemoChart() {
+      transpose = 0;
+      renderChordPro(charts[el("demoSelect").value]);
+      setStatus("Demo chart loaded");
+      toast("Demo recognition uses public-domain charts bundled with the app.");
+    }
+
+    async function recognizeWithAudD() {
+      const token = el("apiToken").value.trim();
+      if (!token || !audioBlob) return null;
+      const form = new FormData();
+      form.append("api_token", token);
+      form.append("return", "apple_music,spotify");
+      form.append("file", audioBlob, "clip.webm");
+      const response = await fetch("https://api.audd.io/", { method: "POST", body: form });
+      if (!response.ok) throw new Error("Recognition service did not respond.");
+      const json = await response.json();
+      if (json.status !== "success" || !json.result) throw new Error("No confident song match found.");
+      return {
+        title: json.result.title,
+        artist: json.result.artist || "Unknown artist",
+        key: "Original",
+        confidence: "Live recognition",
+        body: `{title: ${json.result.title}}
+{artist: ${json.result.artist || "Unknown artist"}}
+{key: Original}
+
+{comment: Live recognition succeeded.}
+
+This prototype does not scrape copyrighted chord pages directly.
+Use the provider links on the left or connect a licensed/public-domain chart source
+in the server adapter for an in-app chart.`
+      };
+    }
+
+    async function startRecording() {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recorder = new MediaRecorder(stream);
+      const chunks = [];
+      recorder.ondataavailable = event => chunks.push(event.data);
+      recorder.onstop = () => {
+        audioBlob = new Blob(chunks, { type: "audio/webm" });
+        el("preview").src = URL.createObjectURL(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+        el("meterBar").style.width = "0%";
+      };
+      recorder.start();
+      seconds = 0;
+      el("recordTime").textContent = "00:00";
+      timer = setInterval(() => {
+        seconds += 1;
+        el("recordTime").textContent = formatTime(seconds);
+        el("meterBar").style.width = `${28 + Math.round(Math.random() * 64)}%`;
+      }, 1000);
+      el("recordBtn").disabled = true;
+      el("stopBtn").disabled = false;
+      setStatus("Recording");
+      toast("Capture 8 to 15 seconds from the clearest part of the song.");
+    }
+
+    function stopRecording() {
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+      clearInterval(timer);
+      el("recordBtn").disabled = false;
+      el("stopBtn").disabled = true;
+      setStatus("Clip ready");
+    }
+
+    el("recordBtn").addEventListener("click", () => {
+      startRecording().catch(() => toast("Microphone access was not available."));
+    });
+    el("stopBtn").addEventListener("click", stopRecording);
+    el("clearBtn").addEventListener("click", () => {
+      audioBlob = null;
+      el("preview").removeAttribute("src");
+      el("recordTime").textContent = "00:00";
+      setStatus("Ready");
+      toast("");
+    });
+    el("audioFile").addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      audioBlob = file;
+      el("preview").src = URL.createObjectURL(file);
+      setStatus("Upload ready");
+      toast("Uploaded clip is ready for recognition.");
+    });
+    el("recognizeBtn").addEventListener("click", async () => {
+      setStatus("Recognizing");
+      toast("Checking the clip...");
+      try {
+        const liveChart = await recognizeWithAudD();
+        if (liveChart) {
+          transpose = 0;
+          renderChordPro(liveChart);
+          setStatus("Recognized");
+          toast("Song recognized. Add a licensed chart provider to display the exact chart automatically.");
+          return;
+        }
+      } catch (error) {
+        toast(`${error.message} Loading demo chart instead.`);
+      }
+      chooseDemoChart();
+    });
+    el("demoSelect").addEventListener("change", chooseDemoChart);
+    el("downBtn").addEventListener("click", () => { transpose -= 1; renderChordPro(currentChart); });
+    el("upBtn").addEventListener("click", () => { transpose += 1; renderChordPro(currentChart); });
+    el("resetBtn").addEventListener("click", () => { transpose = 0; renderChordPro(currentChart); });
+    el("printBtn").addEventListener("click", () => window.print());
+
+    renderChordPro(currentChart);
+    updateProviderLinks(currentChart.title, currentChart.artist);
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "env": [
+    {
+      "key": "NEXT_PUBLIC_AUDD_API_KEY",
+      "description": "AudD API key for music recognition"
+    },
+    {
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "description": "Supabase project URL (optional)"
+    },
+    {
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "description": "Supabase anonymous key (optional)"
+    }
+  ]
+}
